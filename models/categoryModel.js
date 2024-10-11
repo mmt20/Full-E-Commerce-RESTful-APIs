@@ -19,21 +19,13 @@ const categorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// const setImageUrl = (doc) => {
-//   if (doc.image) {
-//     const imageUrl = `${process.env.BASE_URL}/categories/${doc.image.split('/').pop()}`;
-//     doc.image = imageUrl;
-//   }
-// };
-
 const setImageUrl = (doc) => {
   // return image baseUrl + image name
   if (doc.image) {
-    const imageUrl = `${process.env.BASE_URL}/categories/${doc.image}`;
+    const imageUrl = `${process.env.BASE_URL}/categories/${doc.image.split('/').pop()}`;
     doc.image = imageUrl;
   }
 };
-
 // findOne , findAll and update
 categorySchema.post('init', (doc) => {
   setImageUrl(doc);
