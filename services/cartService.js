@@ -19,7 +19,7 @@ const calcTotalCartPrice = (cart) => {
 // @route   POST /api/v1/cart
 // @access  Private/User
 exports.addProductToCart = asyncHandler(async (req, res, next) => {
-  const { productId, color } = req.body;
+  const { productId } = req.body;
   const product = await Product.findById(productId);
 
   // 1) Get Cart for logged user
@@ -28,12 +28,12 @@ exports.addProductToCart = asyncHandler(async (req, res, next) => {
     // create cart for logged user with product
     cart = await Cart.create({
       user: req.user._id,
-      cartItems: [{ product, color, price: product.price }],
+      cartItems: [{ product, price: product.price }],
     });
   } else {
     // product exist in cart , upadte product quntaty
     const productIndex = cart.cartItems.findIndex(
-      (item) => item.product.toString() === productId && item.color === color
+      (item) => item.product.toString() === productId
     );
 
     if (productIndex > -1) {
@@ -42,7 +42,7 @@ exports.addProductToCart = asyncHandler(async (req, res, next) => {
       cart.cartItems[productIndex] = cartItem;
     } else {
       // product not exist in cart,  psuh product to cart item
-      cart.cartItems.push({ product: productId, color, price: product.price });
+      cart.cartItems.push({ product: productId, price: product.price });
     }
     // calculate total price
     calcTotalCartPrice(cart);

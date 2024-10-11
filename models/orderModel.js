@@ -14,7 +14,6 @@ const orderSchema = new mongoose.Schema(
           ref: 'Product',
         },
         quantity: Number,
-        color: String,
         price: Number,
       },
     ],
@@ -58,7 +57,7 @@ orderSchema.pre(/^find/, function (next) {
   this.populate({
     path: 'user',
     select: 'name profileImg email phone',
-  }).populate({ path: 'cartItems.product', select: 'title imageCover' });
+  }).populate({ path: 'cartItems.product', select: 'title image' });
 
   next();
 });

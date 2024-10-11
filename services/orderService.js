@@ -26,9 +26,7 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
   }
 
   // 2) Get order price depend on cart price "Check if coupon applyed"
-  const cartPrice = cart.totalPriceAfterDiscount
-    ? cart.totalPriceAfterDiscount
-    : cart.totalCartPrice;
+  const cartPrice = cart.totalCartPrice;
 
   const totalOrderPrice = cartPrice + taxPric + shippingPrice;
 
@@ -133,9 +131,7 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
   }
 
   // 2) Get order price depend on cart price "Check if coupon applyed"
-  const cartPrice = cart.totalPriceAfterDiscount
-    ? cart.totalPriceAfterDiscount
-    : cart.totalCartPrice;
+  const cartPrice = cart.totalCartPrice;
 
   const totalOrderPrice = cartPrice + taxPric + shippingPrice;
 
