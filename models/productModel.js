@@ -43,9 +43,21 @@ const productSchema = new mongoose.Schema(
       ref: 'Category',
       required: [true, 'Product  must be belong to category'],
     },
+    ratingsAverage: {
+      type: Number,
+      min: [1, 'Rating must be about or equal 1.0'],
+      max: [5, 'Rating must be below or equal 5.0'],
+    },
+    ratingsQuantity: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
+    // to enable virtual populate
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
@@ -62,6 +74,12 @@ const setImageUrl = (doc) => {
     doc.image = imageUrl;
   }
 };
+
+productSchema.virtual('reviwes', {
+  ref: 'Review',
+  foreignField: 'product',
+  localField: '_id',
+});
 
 // findOne , findAll and update
 productSchema.post('init', (doc) => {
