@@ -65,12 +65,16 @@ const setImageUrl = (doc) => {
 
 // findOne , findAll and update
 productSchema.post('init', (doc) => {
-  setImageUrl(doc);
+  if (doc) {
+    setImageUrl(doc);
+  }
 });
 
 // create
 productSchema.post('save', (doc) => {
-  setImageUrl(doc);
+  if (doc) {
+    setImageUrl(doc);
+  }
 });
 
 //2- Create model

@@ -61,7 +61,7 @@ if (process.env.NODE_ENV !== 'development') {
   });
 
   // Apply the rate limiting middleware to all requests.
-  app.use('/api', limiter);
+  app.use('/api');
 }
 
 // Middleware to protect against HTTP Parameter Pollution attacks
