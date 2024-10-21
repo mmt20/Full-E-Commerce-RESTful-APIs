@@ -18,9 +18,9 @@ exports.saveProductImage = asyncHandler(async (req, res, next) => {
 
   if (req.file) {
     await sharp(req.file.buffer)
-      .resize(600, 600)
-      .toFormat('jpeg')
-      .jpeg({ quality: 95 })
+      // .resize(600, 600)
+      // .toFormat('jpeg')
+      // .jpeg({ quality: 95 })
       .toFile(`uploads/products/${filename}`);
     // Save image into our db
     req.body.image = filename;
