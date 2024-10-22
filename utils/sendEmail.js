@@ -13,7 +13,7 @@ const sendEmail = async (options) => {
   console.log(process.env.EMAIL_PASS);
   // 2) Define email options (like from, to , subject , content)
   const mailOPtions = {
-    from: 'E-Shop App mostafadevtest@gmail.com',
+    from: 'ART MARKET App mostafadevtest@gmail.com',
     to: options.email,
     subject: options.subject,
     text: options.message,
