@@ -26,14 +26,16 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
   }
 
   // 2) Get order price depend on cart price "Check if coupon applyed"
-  const cartPrice = cart.totalCartPrice;
+  const cartPrice = cart.totalPriceAfterDiscount
+    ? cart.totalPriceAfterDiscount
+    : cart.totalCartPrice;
 
   const totalOrderPrice = cartPrice + taxPric + shippingPrice;
 
   // 3) Create order with defult paymentMethodType cash
   const order = await Order.create({
     user: req.user._id,
-    cartItems: cart.products,
+    products: cart.products,
     shippingAddress: req.body.shippingAddress,
     totalOrderPrice,
   });
@@ -45,6 +47,7 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
         update: { $inc: { quantity: -item.quantity, sold: +item.quantity } },
       },
     }));
+
     await Product.bulkWrite(bulkOption, {});
 
     // 5) Clear cart depend on cartId
@@ -107,8 +110,8 @@ exports.updateOrderToDelivered = asyncHandler(async (req, res, next) => {
     );
   }
   // update order to paid
-  order.isDlivered = true;
-  order.dliveredAt = Date.now();
+  order.isDelivered = true;
+  order.deliveredAt = Date.now();
   const updatedOrder = await order.save();
 
   res.status(200).json({ status: 'success', data: updatedOrder });
@@ -118,11 +121,7 @@ exports.updateOrderToDelivered = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/orders/checkout-session/cartId
 // @access  Protected/User
 exports.checkoutSession = asyncHandler(async (req, res, next) => {
-  // app settings
-  const taxPric = 0;
-  const shippingPrice = 0;
-
-  // 1) Get cart depend on cartId
+  // 1) Get the currently cart
   const cart = await Cart.findById(req.params.cartId);
   if (!cart) {
     return next(
@@ -130,12 +129,14 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // 2) Get order price depend on cart price "Check if coupon applyed"
-  const cartPrice = cart.totalCartPrice;
+  // 2) Get cart price, Check if there is coupon apply
+  const cartPrice = cart.totalPriceAfterDiscount
+    ? cart.totalPriceAfterDiscount
+    : cart.totalCartPrice;
 
-  const totalOrderPrice = cartPrice + taxPric + shippingPrice;
+  const totalOrderPrice = cartPrice;
 
-  // 3) Create stripe checkout session
+  // 3) Create checkout session
   const session = await stripe.checkout.sessions.create({
     line_items: [
       {
@@ -144,14 +145,16 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
           product_data: {
             name: req.user.name,
           },
-          unit_amount: totalOrderPrice * 100, // Stripe accepts amount in cents
+          unit_amount: totalOrderPrice * 100,
         },
         quantity: 1,
       },
     ],
     mode: 'payment',
-    success_url: `${req.protocol}://${req.get('host')}/orders`,
-    cancel_url: `${req.protocol}://${req.get('host')}/cart`,
+    // success_url: `${req.protocol}://${req.get('host')}/orders`,
+    success_url: `http://localhost:3000/user/allOrders`,
+    // cancel_url: `${req.protocol}://${req.get('host')}/cart`,
+    cancel_url: `http://localhost:3000/cart`,
     customer_email: req.user.email,
     client_reference_id: req.params.cartId, // to can create order
     metadata: req.body.shippingAddress,
@@ -161,63 +164,67 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
   res.status(200).json({ status: 'success', session });
 });
 
-const createCardOrder = async (session) => {
-  const cartId = session.client_reference_id;
-  const shippingAddress = session.metadata;
-  const oderPrice = session.amount_total / 100;
+const createOrderCheckout = async (session) => {
+  try {
+    // 1) Get needed data from session
+    const cartId = session.client_reference_id;
+    const shippingAddress = session.metadata;
+    const checkoutAmount = session.amount_total / 100;
 
-  const cart = await Cart.findById(cartId);
-  const user = await User.findOne({ email: session.customer_email });
+    // 2) Get Cart and User
+    const cart = await Cart.findById(cartId);
+    const user = await User.findOne({ email: session.customer_email });
+    console.log('cart', cart);
 
-  // Create Order
-  // 3) Create order with defult paymentMethodType card
-  const order = await Order.create({
-    user: user._id,
-    cartItems: cart.products,
-    shippingAddress: shippingAddress,
-    totalOrderPrice: oderPrice,
-    isPaid: true,
-    paidAt: Date.now(),
-    paymentMethodType: 'card',
-  });
-  // 4) After creating order, decrement product quntity , increment product sold
-  if (order) {
-    const bulkOption = cart.products.map((item) => ({
-      updateOne: {
-        filter: { _id: item.product },
-        update: { $inc: { quantity: -item.quantity, sold: +item.quantity } },
-      },
-    }));
-    await Product.bulkWrite(bulkOption, {});
+    // 3) Create order
+    const order = await Order.create({
+      user: user._id,
+      products: cart.products,
+      shippingAddress: shippingAddress,
+      totalOrderPrice: checkoutAmount,
+      paymentMethodType: 'card',
+      isPaid: true,
+      paidAt: Date.now(),
+    });
 
-    // 5) Clear cart depend on cartId
-    await Cart.findByIdAndDelete(cartId);
+    // 4) After creating order decrement product quantity, increment sold
+    if (order) {
+      const bulkOption = cart.products.map((item) => ({
+        updateOne: {
+          filter: { _id: item.product },
+          update: { $inc: { quantity: -item.quantity, sold: +item.quantity } },
+        },
+      }));
+      await Product.bulkWrite(bulkOption, {});
+
+      // 5) Clear cart
+      await Cart.findByIdAndDelete(cart._id);
+    }
+  } catch (error) {
+    console.error('Error creating order or deleting cart:', error);
+    throw error; // Re-throw error to be handled in the webhook
   }
-  res.status(201).json({ recevied: true });
 };
 
-// @desc    This webhook will run when stripe payment success paid
-// @route   POST /webhook-checkout
-// @access  Protected/User
-exports.webhookCheckout = asyncHandler(async (req, res, next) => {
-  const sig = req.headers['stripe-signature'];
-
+// @desc    This webhook will run when stipe payment successfully paid
+// @route   PUT /webhook-checkout
+// @access  From stripe
+exports.webhookCheckout = async (req, res, next) => {
+  const signature = req.headers['stripe-signature'].toString();
   let event;
-
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
-      sig,
+      signature,
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    return res.status(400).send(`Webhook error: ${err.message}`);
   }
-  if (event.type === 'checkout.session.completed') {
-    console.log('Webhook event received: ', event.type);
 
-    //  Create order
-    await createCardOrder(event.data.object);
+  if (event.type === 'checkout.session.completed') {
+    await createOrderCheckout(event.data.object);
   }
+
   res.status(200).json({ received: true });
-});
+};
