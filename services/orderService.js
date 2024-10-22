@@ -130,8 +130,8 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
   }
 
   // 2) Get cart price, Check if there is coupon apply
-  const cartPrice = cart.totalPriceAfterDiscount
-    ? cart.totalPriceAfterDiscount
+  const cartPrice = cart.totalAfterDiscount
+    ? cart.totalAfterDiscount
     : cart.totalCartPrice;
 
   const totalOrderPrice = cartPrice;
@@ -151,9 +151,9 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
       },
     ],
     mode: 'payment',
-    // success_url: `${req.protocol}://${req.get('host')}/orders`,
+    // success_url: `${req.protocol}://${req.get('host')}/allOrders`,
     success_url: `http://localhost:3000/user/allOrders`,
-    // cancel_url: `${req.protocol}://${req.get('host')}/cart`,
+    // cancel_url: `${req.protocol}://${req.get('host')}/cart `,
     cancel_url: `http://localhost:3000/cart`,
     customer_email: req.user.email,
     client_reference_id: req.params.cartId, // to can create order
