@@ -83,14 +83,7 @@ Before you begin, ensure you have the following installed:
 For full details on API routes, request bodies, and responses, refer to the
 [Ecommerce Api.postman_collection](https://drive.google.com/file/d/1bdHiXN1F44D3X2B5lonyvPnWXbkMGpfM/view?usp=sharing) file. You can import this collection into Postman to explore, test, and interact with the API endpoints.
 
-## Deployment
+## Contact
 
-### Deploy to Production
+Mostafa Mohamed - [@MMTAHA22](https://x.com/MMTAHA22) - mmt202002@gmail.com
 
-To deploy this project to a production environment:
-
-1. Set your environment variables for production (as described in the **Configure Environment Variables** section).
-2. Use a service like [Heroku](https://www.heroku.com/), [AWS](https://aws.amazon.com/), or [DigitalOcean](https://www.digitalocean.com/) to deploy your application.
-3. For handling MongoDB in production, use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) for a cloud-based database solution.
-
-https://drive.google.com/file/d/1bdHiXN1F44D3X2B5lonyvPnWXbkMGpfM/view?usp=sharing
